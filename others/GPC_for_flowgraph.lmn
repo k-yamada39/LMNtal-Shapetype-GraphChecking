@@ -1,0 +1,255 @@
+/* graph parser combinator for HRG */
+
+/* initial setting */
+start, fc.
+
+
+// triple loop
+start :- edge("start",0,[!ONE]), edge("text",1,[!ONE,!TWO]),
+					edge("cond",2,[!TWO,!THREE,!FOUR]), edge("text",3,[!THREE,!FIVE]), 
+					edge("text",4,[!FOUR,!SIX]), edge("cond",5,[!FIVE,!SEVEN,!NINE]),
+					edge("cond",6,[!SIX,!EIGHT,!TEN]), edge("text",7,[!SEVEN,!ELEV]), 
+					edge("text",8,[!ELEV,!THIR]), edge("text",9,[!NINE,!THIR]),
+					edge("text",10,[!EIGHT,!TWO]), edge("text",11,[!TEN,!TWEL]),
+					edge("cond",12,[!TWEL,!FOURT,!FIFT]), edge("text",13,[!FOURT,!SIX]), 
+					edge("text",14,[!FIFT,!TWEL]), edge("end",15,[!THIR]),
+					marks=[mark(!ONE), mark(!TWO), mark(!THREE), mark(!FOUR), mark(!FIVE), 
+					mark(!SIX), mark(!SEVEN), mark(!EIGHT), mark(!NINE), mark(!TEN), 
+					mark(!ELEV), mark(!TWEL), mark(!THIR), mark(!FOURT), mark(!FIFT)],
+					edgenum(15).
+/*
+// double loop
+start :- edge("start",0,[!ONE]), edge("text",1,[!ONE,!TWO]),
+					edge("cond",2,[!TWO,!THREE,!FOUR]),
+					edge("text",3,[!THREE,!EIGHT]), edge("text",4,[!FOUR,!FIVE]), 
+					edge("cond",5,[!FIVE,!SIX,!SEVEN]), edge("text",6,[!SIX,!TWO]),
+					edge("text",7,[!SEVEN,!FIVE]),edge("end",8,[!EIGHT]),
+					marks=[mark(!ONE), mark(!TWO), mark(!THREE), mark(!FOUR), 
+											mark(!FIVE), mark(!SIX), mark(!SEVEN), mark(!EIGHT)],
+					edgenum(8).
+
+
+// single loop(with ifelse)
+start :- edge("start",0,[!ONE]), edge("text",1,[!ONE,!TWO]), 
+					edge("cond",2,[!TWO,!SEVEN,!THREE]), 
+					edge("cond",3,[!THREE,!FOUR,!FIVE]), edge("text",4,[!FOUR,!SIX]),
+					edge("text",5,[!FIVE,!SIX]), edge("text",6,[!SIX,!TWO]), 
+					edge("end",7,[!SEVEN]),
+					marks=[mark(!ONE), mark(!TWO), mark(!THREE), mark(!FOUR), 
+																		mark(!FIVE), mark(!SIX), mark(!SEVEN)],
+					edgenum(7).
+
+test@@
+start :- edge("start",0,[!ONE]), edge("text",1,[!ONE,!TWO]),
+	edge("cond",2,[!TWO,!FOUR,!THREE]), edge("text",3,[!THREE,!TWO]),edge("end",4,[!FOUR]),
+	marks=[mark(!ONE), mark(!TWO), mark(!THREE), mark(!FOUR)],
+	edgenum(4).
+
+start :- 
+	edge("start",0,[!ONE]), edge("text",1,[!ONE,!TWO]),edge("end",2,[!TWO]),
+	marks=[mark(!ONE), mark(!TWO)],
+	edgenum(2).
+*/
+/* initial setting end */
+
+rule_fc@@
+fc, edge("start",S,[HL1]), edge("end",E,[HL2]) :- 
+				int(S), int(E), hlink(HL1), hlink(HL2) | 
+				res=[stmts,[HL1,HL2]], edge("start",S,[HL1],a), edge("end",E,[HL2],a).
+
+
+/*rule_stmts start*/
+rule_stmts@@
+R = [stmts,[HL1,HL2]] :- R = oneOf([stmts1,stmts2],[HL1,HL2]).
+
+
+rule_stmts1@@
+R = [stmts1,[HL1,HL2]] :- R = stmts1sub([stmt,[HL1,HL2]]).
+rule_stmts1sub_succ@@
+R = stmts1sub(some(RESULT,LIST)) :- R = some([RESULT],LIST).
+rule_stmts1sub_false@@
+R = stmts1sub(false) :- R = false.
+
+
+rule_stmts2_init@@	//use remaks list
+R = [stmts2,[HL1,HL2]], marks([mark(H)|T]) :- hlink(H), hlink(HL1) |
+	R = stmts2sub1([stmt,[HL1,H]],HL1,HL2,H), marks([mark(H)|T]).
+	
+rule_stmts2sub1_cont@@
+R = stmts2sub1(false,HL1,HL2,HL3), '.'(mark(HL3),T1,H), '.'(mark(HL4),T2,T1) :-
+	hlink(HL1), hlink(HL3), hlink(HL4) |
+	R = stmts2sub1([stmt,[HL1,HL4]],HL1,HL2,HL4), '.'(mark(HL3),T1,H), '.'(mark(HL4),T2,T1).
+rule_stmts2sub1_false@@
+R = stmts2sub1(false,HL1,HL2,HL3), '.'(mark(HL3),[],H) :-
+	hlink(HL1), hlink(HL2), hlink(HL3) |
+	R = false, '.'(mark(HL3),[],H).
+rule_stmts2sub1_succ@@
+R = stmts2sub1(some(RESULT,LIST),HL1,HL2,HL3) :-
+	hlink(HL3), hlink(HL2) |
+	R = stmts2sub2([stmts,[HL3,HL2]],some(RESULT,LIST),HL1,HL2,HL3).
+
+rule_stmts2sub2_succ@@
+R = stmts2sub2(some(RESULT2,LIST2),some(RESULT1,LIST1),HL1,HL2,HL3) :-
+	hlink(HL1), hlink(HL2), hlink(HL3) |
+	R = some([RESULT1|RESULT2],list.append(LIST2,LIST1)).
+rule_stmts2sub2_false@@
+R = stmts2sub2(false,some(RESULT1,LIST1),HL1,HL2,HL3) :- 
+	ground(RESULT1) |
+	R = stmts2sub2false(reverse(-1,LIST1),HL1,HL2,HL3).
+rule_stmt2sub2_end@@
+R = stmts2sub2false([],HL1,HL2,HL3) :-
+	R = stmts2sub1(false,HL1,HL2,HL3).
+/*rule_stmts end*/
+
+
+/*rule reverse start*/
+reverse@@
+R = reverse(N,[X|Y]), edge(A,B,C,X) :- N =\= 0, N1 = N-1 | R = reverse(N1,Y), edge(A,B,C).
+reverseend@@
+R = reverse(N,[]) :- int(N) | R = [].
+reverseend@@
+R = reverse(N,[X|Y]) :- N =:= 0 | R = [X|Y].
+/*rule reverse end*/
+
+
+/* rule_stmt start*/
+rule_stmt@@
+R = [stmt,[HL1,HL2]] :- R = oneOf([stmt1,stmt2,stmt3],[HL1,HL2]).
+
+
+rule_stmt1@@
+R = [stmt1,[HL1,HL2]] :- 
+	R = stmt1sub(connLabContext("text",[0,1],[HL1,HL2],0)).
+rule_stmt1sub_succ@@
+R = stmt1sub(edge(A,B,C)) :- R = some("Text",[X]), edge(A,B,C,X).
+rule_stmtsub_false@@
+R = stmt1sub(false) :- R = false.
+
+
+rule_stmt2@@
+R = [stmt2,[HL1,HL2]] :-
+	R = stmt2sub(connLabContext("cond",[0],[HL1],0),HL2).
+rule_stmt2sub_succ@@
+R = stmt2sub(edge(A,B,[HL1,C,D|T]),HL2) :- 
+	hlink(HL2), hlink(C) |
+	R = stmt2sub2([stmts,[C,HL2]],edge(A,B,[HL1,C,D|T]),HL2).
+rule_stmt2sub_false@@
+R = stmt2sub(false,HL2) :- hlink(HL2) | R = false.
+
+rule_stmt2sub2_succ@@
+R = stmt2sub2(some(RESULT,LIST),edge(A,B,[HL1,C,D|T]),HL2) :-
+	hlink(D) |
+	R = stmt2sub3([stmts,[D,HL2]],some(RESULT,LIST),edge(A,B,[HL1,C,D|T])).
+rule_stmt2sub2_false@@
+R = stmt2sub2(false,edge(A,B,LIST),HL2) :-
+	hlink(HL2) |
+	R = false, edge(A,B,LIST).
+
+rule_stmt2sub3_succ@@
+R = stmt2sub3(some(RESULT1,LIST1),some(RESULT2,LIST2),edge(A,B,LIST)) :-
+	R = some(tuple("IfElse",RESULT2,RESULT1),[X|list.append(LIST1,LIST2)]), edge(A,B,LIST,X).
+rule_stmt2sub3_false@@
+R = stmt2sub3(false,some(RESULT,LIST2),edge(A,B,LIST)) :-
+	ground(RESULT) |
+	R = stmt2sub3false(reverse(-1,LIST2)), edge(A,B,LIST).
+rule_stmt2sub3_end@@
+R = stmt2sub3false([]) :- R = false.
+
+
+rule_stmt3@@
+R = [stmt3,[HL1,HL2]] :- hlink(HL1) |
+	R = stmt3sub(connLabContext("cond",[0,1],[HL1,HL2],0),HL1).
+rule_stmt3sub_succ@@
+R = stmt3sub(edge(A,B,[HL1,C,D|T]),HL2) :- 
+	hlink(D) | 
+	R = stmt3sub2([stmts,[D,HL2]],edge(A,B,[HL1,C,D|T])).
+rule_stmt3sub_false@@
+R = stmt3sub(false,HL1) :- hlink(HL1) | R = false.
+
+rule_stmt3sub2_succ@@
+R = stmt3sub2(some(RESULT,LIST),edge(A,B,ELIST)) :-
+	R = some(tuple("While",RESULT),[X|LIST]), edge(A,B,ELIST,X).
+rule_stmt3sub2_false@@
+R = stmt3sub2(false,edge(A,B,ELIST)) :- R = false, edge(A,B,ELIST).
+/*rule_stmt end*/
+
+
+/*rule_oneof start*/
+rule_oneOf_init@@
+R = oneOf([X|Y],INP) :- ground(INP) |
+	R = oneOf(oneOfsub([X,INP]),Y,INP).
+rule_oneOf_cont@@
+R = oneOf(oneOfsub(false),[X|Y],INP) :- ground(INP) |
+	R = oneOf(oneOfsub([X,INP]),Y,INP).
+
+rule_oneOf_succ@@
+R = oneOf(oneOfsub(STR),X,INP) :- string(STR), ground(X), ground(INP) |
+	R = STR.
+rule_oneOf_succ@@
+R = oneOf(oneOfsub([H|T]),X,INP) :- ground(X), ground(INP) |
+	R = [H|T].
+rule_oneOf_succ@@
+R = oneOf(oneOfsub(some(RESULT,LIST)),X,INP) :- ground(X), ground(INP) |
+	R = some(RESULT,LIST).
+rule_oneOf_false@@
+R = oneOf(oneOfsub(false),[],INP) :- ground(INP) | R = false.
+/*rule_oneOf end*/
+
+
+/* connLabrules start
+	search for only first or second nodes
+*/
+R = connLabContext(ANS,X,Y,N), edge(CHECK,A,B) :- 
+	N =:= A, ground(X), ground(Y) |
+	R = connsubcheck(connsubpre(edge(CHECK,A,B),X,Y),ANS,X,Y,N).
+R = connLabContext(ANS,X,Y,N), edge(CHECK,A,B,RE) :-
+	N =:= A, N1 = N+1|
+	R = connLabContext(ANS,X,Y,N1), edge(CHECK,A,B,RE).
+R = connLabContext(ANS,X,Y,N), edgenum(MAX) :-
+	N > MAX, string(ANS), ground(X), ground(Y)|
+	R = false, edgenum(MAX).
+
+rule_connLabsucc@@
+R = connsubcheck(edge(A,B,C),ANS,X,Y,N) :- 
+	string(ANS), ground(X), ground(Y), int(N) |
+	R = edge(A,B,C).
+rule_connLabfalse@@
+R = connsubcheck(false,ANS,X,Y,N) :- 
+	N1 = N+1 | R = connLabContext(ANS,X,Y,N1).
+	
+rule_connsubpre_pass@@
+R = connsubcheck(connsubpre(edge(CHECK,A,B),X1,Y1),ANS,X2,Y2,N) :-
+	ANS==CHECK |
+	R = connsubcheck(connsub(edge(CHECK,A,B),X1,Y1),ANS,X2,Y2,N).
+rule_connsubpre_false@@
+R = connsubcheck(connsubpre(edge(CHECK,A,B),X1,Y1),ANS,X2,Y2,N) :-
+	ANS\==CHECK, N1 = N+1, ground(X1), ground(Y1) |
+	R = connLabContext(ANS,X2,Y2,N1), edge(CHECK,A,B).
+
+rule_connsub_cont_0@@
+R = connsub(edge(STR,A,[H|T]),[0|LS1],[HL|LS2]) :- 
+	hlink(H),hlink(HL), H==HL |
+	R = connsub(edge(STR,A,[H|T]),LS1,LS2).
+rule_connsub_false_0@@
+R = connsub(edge(STR,A,[H|T]),[0|LS1],[HL|LS2]) :- 
+	ground(LS1),ground(LS2),hlink(H),hlink(HL), H\=HL |
+	R = false, edge(STR,A,[H|T]).
+rule_connsub_cont_1@@
+R = connsub(edge(STR,A,[H1,H2|T]),[1|LS1],[HL|LS2]) :- 
+	hlink(H2),hlink(HL), H2==HL |
+	R = connsub(edge(STR,A,[H1,H2|T]),LS1,LS2).
+rule_connsub_false_1@@
+R = connsub(edge(STR,A,[H1,H2|T]),[1|LS1],[HL|LS2]) :- 
+	ground(LS1),ground(LS2),hlink(H2),hlink(HL), H2\=HL |
+	R = false, edge(STR,A,[H1,H2|T]).
+rule_connsub_succ@@
+R = connsub(edge(STR,A,LINKS),[],[]) :- 
+	string(STR), int(A) |
+	R = edge(STR,A,LINKS).
+/* connLabrules end */
+
+
+remove_mark_list@@
+'.'(mark(HL),H,T) :- $n = num(HL), $n =:= 1 | H = T.
+remove_marks@@
+marks([]) :- .

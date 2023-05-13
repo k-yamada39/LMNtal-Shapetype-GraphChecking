@@ -1,0 +1,31 @@
+/*
+R = rbtree :- R = down(btree).
+R = down(btree) :- R = up(l).
+R = down(btree) :- R = b_w(down(tree),tree).
+R = b_w(up(X),tree) :- R = b_w(X,down(tree)).
+R = b_w(X,up(Y)) :- R = up(b(X,Y)).
+R = down(tree) :- R = up(l).
+R = down(tree) :- R = b_w(down(tree),tree).
+R = down(tree) :- R = r_w(down(btree),btree).
+R = r_w(up(X),btree) :- R = r_w(X,down(btree)).
+R = r_w(X,up(Y)) :- R = up(r(X,Y)).
+*/
+
+{
+	//res(down(b(b(r(b(r(l,l),l),b(l,l)),r(l,l)),b(b(l,l),b(l,l))))).
+	//res(down(b(l,r(l,b(l,b(b(r(l,l),b(l,b(l,r(l,b(r(l,b(l,b(b(b(r(b(r(l,b(l,b(r(b(l,l),l),l))),r(b(r(b(b(r(l,l),l),l),b(l,b(l,l))),l),l)),l),l),l),l))),l))))),l)))))).
+	res(down(b(r(l,b(r(b(b(l,b(b(l,l),r(l,l))),r(b(l,b(r(l,b(l,l)),r(l,b(b(l,r(l,l)),b(r(l,l),l))))),b(r(l,b(l,r(l,l))),l))),b(b(r(b(r(b(l,r(l,b(l,l))),l),l),b(l,l)),l),b(l,r(l,b(b(b(b(b(b(l,r(l,l)),b(l,b(l,b(r(l,l),r(l,l))))),b(b(b(r(l,b(b(b(l,r(b(r(b(b(b(l,b(l,b(r(l,l),b(r(l,b(b(r(l,b(l,r(b(l,b(b(b(l,r(b(r(b(r(b(l,b(r(l,l),r(l,l))),b(b(b(b(l,l),l),b(r(l,b(l,r(b(r(l,b(r(b(r(l,b(b(b(l,l),l),l)),l),l),l)),l),l))),l)),l)),l),l),l),l)),l),l)),l))),l),l)),l)))),l),l),l),l),l)),l),l)),l),l),l)),l),l),l))))),l)),l))).
+	
+	R = up(btree) :- R = rbtree.
+	R = down(l):- R = up(btree).
+	R = b_w(up(tree),tree) :- R = up(btree).
+	R = b_w(X,up(tree)) :- R = b_w(down(X),tree) .
+	R = down(b(X,Y)) :- R = b_w(X,down(Y)).
+	R = down(l) :- R = up(tree).
+	R = b_w(up(tree),tree) :- R = up(tree).
+	R = r_w(up(btree),btree) :- R = up(tree).
+	R = r_w(X,up(btree)) :- R = r_w(down(X),btree).
+	R = down(r(X,Y)) :- R = r_w(X,down(Y)).
+}.
+
+{res(rbtree), @p} :- ok.

@@ -1,0 +1,68 @@
+/*
+nil(node(L0,node(L1,node(L2,nil,nil),nil),nil)),
+nil(node(L3,node(L4,node(L5,nil,L2),L1),L0)),
+nil(node(nil,node(nil,node(nil,nil,L5),L4),L3)).
+*/
+/*
+nil(node(L0,node(nil,node(L2,nil,nil),nil),nil)),
+nil(node(L3,node(L4,node(L5,nil,L2),nil),L0)),
+nil(node(nil,node(nil,node(nil,nil,L5),L4),L3)).
+*/
+/*
+nil(node(L0,nil,nil)). nil(node(L1,nil,L0)). nil(node(L2,nil,L1)). nil(node(L3,nil,L2)). nil(node(nil,nil,L3)).
+nil(node(nil,node(nil,node(nil,node(nil,node(nil,nil,nil),nil),nil),nil),nil)).
+*/
+/*
+nil(node(nil,node(nil,node(nil,node(nil,node(nil,nil,nil),L1),L2),L3),L4)).
+nil(node(L4,node(L3,node(L2,node(L1,nil,nil),nil),nil),nil)).
+*/
+/*
+nil(node(nil,node(L1,nil,L2),L3)).
+nil(node(L3,node(L2,nil,L4),L5)).
+nil(node(L5,node(L4,nil,L6),L7)).
+nil(node(L7,node(L6,nil,nil),nil)).
+node(nil,nil,L1,nil).
+*/
+/*
+nil(node(nil,node(nil,node(nil,node(nil,node(nil,nil,L0),L1),L2),L3),L4)).
+nil(node(L4,node(L3,node(L2,node(L1,node(L0,nil,L5),L6),L7),L8),L9)).
+nil(node(L9,node(L8,node(L7,node(L6,node(L5,nil,nil),nil),nil),nil),nil)).
+*/
+
+nil(node(nil,node(nil,node(nil,node(nil,node(nil,nil,L0),L1),L2),L3),L4)).
+nil(node(L4,node(L3,node(L2,L10,L7),L8),L9)).
+nil(node(L9,node(L8,node(L7,node(L1,node(L5,nil,nil),nil),nil),nil),nil)).
+node(L0,nil,L5,L10).
+
+exe.
+
+start@@
+node(nil,nil,D,R), exe :- s(1,1,nil,nil,D,R).
+
+leftup@@
+s(X,Y,nil,nil,D,R), node(nil,R,D1,R1), node(D,nil,D2,R2) :-
+	X1=X+1, Y1=Y+1 |
+	s(X,Y,nil,nil,D,R), s(X1,Y,nil,R,D1,R1), s(X,Y1,D,nil,D2,R2).
+
+rule1@@
+s(X,Y,U,nil,D,R), node(U1,R,D1,R1), s(X2,Y2,U2,L2,U1,R2), node(D,nil,D3,R3):-
+	X1=X+1, Y3=Y+1, X2=X+1, Y2=Y-1 |
+	s(X,Y,U,nil,D,R), s(X1,Y,U1,R,D1,R1), s(X2,Y2,U2,L2,U1,R2), s(X,Y3,D,nil,D3,R3).
+rule2@@
+s(X,Y,U,nil,nil,R), node(U1,R,nil,R1), s(X2,Y2,U2,L2,U1,R2) :-
+	X1=X+1, X2=X+1, Y2=Y-1 |
+	s(X,Y,U,nil,nil,R), s(X1,Y,U1,R,nil,R1), s(X2,Y2,U2,L2,U1,R2).
+rule3@@
+s(X,Y,U,nil,D,nil), node(D,nil,D1,nil) :- 
+	int(X), Y1=Y+1 |
+	s(X,Y,U,nil,D,nil), s(X,Y1,D,nil,D1,nil).
+
+rule4@@
+s(X,Y,nil,L,D,R), node(nil,R,D1,R1) :- 
+	X1=X+1, int(Y) |
+	s(X,Y,nil,L,D,R), s(X1,Y,nil,R,D1,R1).
+
+rule5@@
+s(X,Y,U,L,D,R), node(U1,R,D1,R1), s(X2,Y2,U2,L2,U1,R2) :-
+	X2=X+1, Y2=Y-1, X1=X+1 |
+	s(X,Y,U,L,D,R), s(X1,Y,U1,R,D1,R1), s(X2,Y2,U2,L2,U1,R2).

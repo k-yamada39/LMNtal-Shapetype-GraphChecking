@@ -1,0 +1,233 @@
+//INPUT = [1,2,"+",2,"-",3,"*",4,"/",5].
+//INPUT = [3,"/","(",1,3,"+",1,0,7,")","-",5,"*",9].
+INPUT = "3/(13+107)-5*9".
+//input = string.split("1 * ( 2 * ( 3 + 4 ) - 5 ) / 6"," ").
+//INPUT = string.split("10+(111)","").
+
+//INPUT = "1+1+1+1+1+1+1+1+1+1".
+//INPUT = "1+(1+(1+(1+(1+(1+(1+(1+(1+1))))))))".
+//INPUT = "1+(1+(1+(1+(1+1))))".
+//INPUT = "((1+1)+(1+1))+((1+1)+(1+1))".
+
+rec = apply(expression,INPUT).
+functional.use.
+//INPUT = io.read_line(io.stdin,io.free_port).
+
+% Return
+Return@@
+R = apply(apply(return,X),LS) :- R = some(X,LS).
+
+% Mzero
+Mzero@@
+R = apply(mzero,LS) :- R = none(LS).
+
+% Any
+Any@@
+R = apply(any,[A|B]) :- R = apply(apply(return,A),B).
+Anynone@@
+R = apply(any,[]) :- R = apply(mzero,[]).
+
+% Bind
+Bindinit@@
+R = apply(apply(apply(bind,X),F),INP) :- R = bindsub(apply(X,INP),F).
+Bindsucc@@
+R = bindsub(some(RES,LS),F) :- R = apply(apply(F,RES),LS).
+Bindfail@@
+R = bindsub(none(LS),F) :- ground(F) | R = none(LS).
+
+% pass
+Pass@@
+R = apply(apply('=>',X),F) :-
+	R = apply(apply(bind,X),FUNC),
+	FUNC = lambda(Y,apply(return,apply(F,Y))).
+
+% ignore left
+Ignoreleft@@
+R = apply(apply('>>',X),Y) :- 
+	R = apply(apply(bind,X),FUNC),
+	FUNC = igsub(Y).
+% ignore right
+Ignoreright@@
+R = apply(apply('<<',X),Y) :-
+	R = apply(apply(bind,X),FUNC1),
+	FUNC1 = lambda(Z,FUNC2),
+	FUNC2 = apply(apply(bind,Y),FUNC3),
+	FUNC3 = igsub(apply(return,Z)).
+% igsub
+Igsub@@
+R = apply(igsub(Y),INP) :- ground(INP) | R = Y.
+
+% between
+Between@@
+R = apply(apply(apply(between,OP),ED),X) :-
+	R = apply(apply('>>',OP),apply(apply('<<',X),ED)).
+
+% Try
+Tryinit@@
+R = apply(apply(apply(try,X),Y),INP) :-
+	R = trysub(apply(X,INP),Y).
+Trysucc@@
+R = trysub(some(RES,LS),Y) :- ground(Y) | R = some(RES,LS).
+Trycont@@
+R = trysub(none(LS),Y) :- R = apply(Y,LS).
+
+% Option
+Option@@
+R = apply(apply(apply(option,DEF),X),INP) :- 
+	R = apply(apply(apply(try,X),apply(return,DEF)),INP).
+
+% Satisfy
+Satisfypre@@
+R = apply(satisfy,TEST) :- R = satisfy(TEST).
+Satisfy@@
+R = apply(satisfy(TEST),LS) :- 
+	R = apply(apply(apply(bind,any),satfunc(TEST)),LS).
+% Satfunc
+Satfunc@@
+R = apply(apply(satfunc(TEST),RES),LS) :- unary(RES) |
+	R = satfuncsub('?'(apply(TEST,RES),satfunctrue,satfuncfalse),RES,LS).
+Satfunctrue@@
+R = satfuncsub(satfunctrue,RES,LS) :-
+	R = apply(apply(return,RES),LS).
+Satfuncfalse@@
+R = satfuncsub(satfuncfalse,RES,LS) :-
+	R = apply(mzero,[RES|LS]).
+
+% Digit
+Digitsucc@@
+R = apply(digit,X) :- int(X) | R = true.
+Digitstr@@
+R = apply(digit,X) :- string(X) | R = digitsub(integer.of_str(X)).
+Digitsubfail@@
+R = digitsub(fail) :- R = false.
+Digitsubsucc@@
+R = digitsub(A) :- int(A) | R = true.
+
+% number
+Number@@
+R = apply(number,INP) :- 
+	R = apply(apply(apply('=>',
+						apply(many,satisfy(digit))),makeint),INP).
+
+% makeint
+Makeint@@
+R = apply(makeint,[X|Y]) :- int(X) | R = apply(makeint,X,Y).
+Makeint@@
+R = apply(makeint,[X|Y]) :- string(X) | R = apply(makeint,integer.of_str(X),Y).
+Makeint@@
+R = apply(makeint,X,[]) :- R = X.
+Makeint@@
+R = apply(makeint,X,[Y|Z]) :- X2 = X*10+Y | R=apply(makeint,X2,Z).
+Makeint@@
+R = apply(makeint,X,[Y|Z]) :- string(Y) | R = apply(makeint,X,[integer.of_str(Y)|Z]).
+
+% manyver2
+Many@@
+R = apply(apply(many,X),INP) :- ground(X) | 
+	R = apply(apply(apply(option,[]),MANYFUNC),INP),
+	MANYFUNC = apply(apply(bind,X),MFUNC),
+	MFUNC = lambda(RR,apply(apply(bind,apply(many,X)),MFUNC2)),
+	MFUNC2 = lambda(RC,apply(return,[RR|RC])).
+
+% chainl1
+Chainl1init@@
+R = apply(apply(apply(chainl1,X),OP),INP) :- unary(X), unary(OP) |
+	R = chainlsub(apply(apply(apply(bind,X),loop),INP),X,OP).
+Chainl1subcont@@
+R = chainlsub(apply(apply(loop,RES),LS),X,OP) :- 
+	R = apply(loop(RES,OP,X),LS).
+Chainl1subend@@
+R = chainlsub(none(LS),X,OP) :- unary(X), unary(OP) | R = none(LS).
+
+Chainl1loop@@
+R = apply(loop(INP,OP,X),INP2) :- 
+	R = looping(apply(apply(apply(try,chainfunc1(X,OP)),chainreturn),INP2),INP).
+Chf1Dply@@
+R = looping(trysub(apply(chainfunc1(X,OP),INP2),chainreturn),INP) :- unary(OP) |
+	R = looping(trysub(apply(apply(apply(bind,OP),chainfunc2(OP,X)),INP2),chainreturn),INP).
+Chf2Dply@@
+R = looping(trysub(apply(apply(chainfunc2(OP,X),RES),LS),chainreturn),INP) :- unary(X) |
+	R = looping(trysub(apply(apply(apply(bind,X),chainfunc3(RES,OP,X)),LS),chainreturn),INP).
+Chf3Dply@@
+R = looping(trysub(apply(apply(chainfunc3(RES,OP,X),RES2),LS),chainreturn),INP) :-
+	R = apply(loop(apply(apply(RES,INP),RES2),OP,X),LS).
+Chreturn@@
+R = looping(apply(chainreturn,LS),INP) :- R = apply(apply(return,INP),LS).
+
+% chainl
+Chainl@@
+R = apply(apply(apply(chainl,X),OP),DEF) :-
+	R = apply(apply(try,FUNC1),apply(return,DEF)),
+	FUNC1 = apply(apply(chainl1,X),OP).
+
+% '=' function ver2
+Equalsucc@@
+R = apply(apply('=',X),Y) :- X == Y | R = true.
+Equalfail@@
+R = apply(apply('=',X),Y) :- X \== Y | R = false.
+
+% exactry
+Exactry@@
+R = apply(apply(exactry,E),INP) :-
+	R = apply(apply(satisfy,apply('=',E)),INP).
+
+% add
+Add@@
+R = apply(add,INP) :- 
+	R = apply(apply(apply('>>',apply(exactry,"+")),apply(return,makesum)),INP).
+% makesum
+Makesum@@
+R = apply(apply(makesum,A1),A2) :-
+	R = add(A1,A2).
+% sub
+Sub@@
+R = apply(sub,INP) :- 
+	R = apply(apply(apply('>>',apply(exactry,"-")),apply(return,makesub)),INP).
+% makesub
+Makesub@@
+R = apply(apply(makesub,A1),A2) :-
+	R = sub(A1,A2).
+% addsub
+AddSub@@
+R = apply(addsub,INP) :-
+	R = apply(apply(apply(try,add),sub),INP).
+% mul
+Mul@@
+R= apply(mul,INP) :-
+	R = apply(apply(apply('>>',apply(exactry,"*")),apply(return,makemul)),INP).
+% makemul
+Makemul@@
+R= apply(apply(makemul,M1),M2) :-
+	R = mul(M1,M2).
+% div
+Div@@
+R = apply(div,INP) :- 
+	R = apply(apply(apply('>>',apply(exactry,"/")),apply(return,makediv)),INP).
+% makediv
+Makediv@@
+R = apply(apply(makediv,A1),A2) :-
+	R = div(A1,A2).
+% muldiv
+MulDiv@@
+R = apply(muldiv,INP) :-
+	R = apply(apply(apply(try,mul),div),INP).
+	
+% parens
+Parens@@
+R = parens :-
+	R = apply(apply(between,apply(exactry,"(")),apply(exactry,")")).
+
+% expression unaryver.
+Expressionlist@@
+R = apply(expression,[HEAD|TAIL]) :-
+	R = apply(apply(apply(chainl1,expterm),addsub),[HEAD|TAIL]).
+Expressionstr@@
+R = apply(expression,INPUT) :- string(INPUT) |
+	R = apply(apply(apply(chainl1,expterm),addsub),string.split(INPUT,"")).
+Expterm@@
+R = apply(expterm,INP) :-
+	R = apply(apply(apply(chainl1,expfactor),muldiv),INP).
+Expfactor@@
+R = apply(expfactor,INP) :-
+	R = apply(apply(apply(try,apply(parens,expression)),number),INP).
+

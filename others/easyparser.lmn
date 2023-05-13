@@ -1,0 +1,120 @@
+INPUT = [1,"+",2,"+",3].           // -> add(1,add(2,3))
+//INPUT = ["(",1,"+",2,")","+",3].   // -> add(add(1,2),3)
+//INPUT = [1,"+","(",0,"+","(",1,"+",2,")",")","+",3].
+//INPUT = [1,"/","(",2,"*",3,"-",4,")","+",5].
+//INPUT = "1/(2+3)".
+//INPUT = [1,"*",2,"*",3,"*",4].
+//INPUT = io.read_line(io.stdin,io.free_port).
+
+rec = parse(INPUT).
+/*
+R = add(A,B) :- ANS = A+B | R = ANS.
+R = sub(A,B) :- ANS = A-B | R = ANS.
+formula(ANS,LOOT) :- int(ANS) | LOOT = ANS.
+*/
+
+strinp@@
+R = parse(INP) :- string(INP) | 
+	R = parse(makedata(string.split(INP,""))).
+makedata@@
+R = makedata([H|T]) :- R = [convert(H)|T].
+cnvexe@@
+R = [convert(H),NEXT|T] :- unary(H) | 
+	R = [convert(H,integer.of_str(H)),convert(NEXT)|T].
+cnvend@@
+R = [convert(H)] :- unary(H) | R = [convert(H,integer.of_str(H))].
+cnvfail@@
+R = convert(H,fail) :- R = H.
+cnvsucc@@
+R = convert(H,A) :- int(A), unary(H) | R = A.
+listinp@@
+R = parse([A|B]) :- 
+	R = parensearch([check(A)|B]), count(0), termcount(0), ascount(0), paired(0).
+chkint@@
+R = [check(A),B|C] :- int(A), int(B), N = 10*A+B | R = [check(N)|C].
+chkint@@
+R = [check(A),B|C] :- int(A), string(B)|R = [A,check(B)|C].
+chkpls@@
+ascount(N), R = [check("+"),B|C] :- N1 = N+1 | ascount(N1), R = ["+",check(B)|C].
+chkmns@@
+ascount(N), R = [check("-"),B|C] :- N1 = N+1 | ascount(N1), R = ["-",check(B)|C].
+mulcnt@@
+termcount(N), R = [check("*"),B|C] :- N1 = N+1 | termcount(N1), R = ["*", check(B)|C].
+divcnt@@
+termcount(N), R = [check("/"),B|C] :- N1 = N+1 | termcount(N1), R = ["/", check(B)|C].
+
+leftprn@@
+count(N), R = [check("("),B|C] :- 
+	N1 = N+1 | 
+	count(N1), R = [paren(N1),check(B)|C].
+rightprn@@
+count(N), paired(PAIR), R = [check(")"),B|C], paren(N2,ROOT) :- 
+	N1 = N-1, N = N2, PAIR1 = PAIR+1 |
+	count(N1), paired(PAIR1), R = [pairr(P),check(B)|C], pairl(P,ROOT).
+rightprn@@
+count(N), paired(PAIR), R = [check(")")], paren(N2,ROOT) :- 
+	N1 = N-1, N = N2, PAIR1 = PAIR+1 |
+	count(N1), paired(PAIR1), R = [check(pairr(P))], pairl(P,ROOT).
+srchend@@
+parensearch(HEAD,ROOT), count(0), R = [check(A)] :- 
+	parensplit(HEAD,ROOT), R = [A].
+
+splt@@
+parensplit(HEAD,ROOT), paired(N), R1 = [pairl(P)|B], R2 = [pairr(P)|C] :-
+	N1 = N-1 |
+	parensplit(HEAD,ROOT), paired(N1), R1 = [B|C], R2 = [].
+splthead@@
+parensplit(HEAD,ROOT), paired(N), HEAD = [pairl(P)|B], R2 = [pairr(P)|C] :-
+	N1 = N-1 |
+	parensplit(HEAD,ROOT), paired(N1), HEAD = [B|C], R2 = [].
+spltend@@
+parensplit(HEAD,ROOT), paired(0) :- term(HEAD,ROOT).
+
+makemul@@
+term(HEAD,ROOT), termcount(N), R = [A,"*",B|T] :-
+	N1 = N-1 |
+	term(HEAD,ROOT), termcount(N1), R = [mul(A,B)|T].
+makemulh@@
+term([A,"*",B|T],ROOT), termcount(N), :-
+	N1 = N-1 |
+	term([mul(A,B)|T],ROOT), termcount(N1).
+makediv@@
+term(HEAD,ROOT), termcount(N), R = [A,"/",B|T] :-
+	N1 = N-1 |
+	term(HEAD,ROOT), termcount(N1), R = [div(A,B)|T].
+makedivh@@
+term([A,"/",B|T],ROOT), termcount(N), :-
+	N1 = N-1 |
+	term([div(A,B)|T],ROOT), termcount(N1).
+termend@@
+term(HEAD,ROOT), termcount(0) :- formula(HEAD,ROOT).
+
+/*
+makeadd@@
+formula(R1,ROOT),R = [H,"+"|T] :- formula(R1,ROOT),R = add(H,T).
+makeaddh@@
+formula([H,"+"|T],ROOT) :- formula(add(H,T),ROOT).
+makesub@@
+formula(R1,ROOT),R = [H,"-"|T] :- formula(R1,ROOT),R = sub(H,T).
+makesubh@@
+formula([H,"-"|T],ROOT) :- formula(sub(H,T),ROOT).
+*/
+makeadd@@
+formula(HEAD,ROOT), ascount(N), R = [A,"+",B|T] :-
+	N1 = N-1 |
+	formula(HEAD,ROOT), ascount(N1), R = [add(A,B)|T].
+makeaddh@@
+formula([A,"+",B|T],ROOT), ascount(N), :-
+	N1 = N-1 |
+	formula([add(A,B)|T],ROOT), ascount(N1).
+makesub@@
+formula(HEAD,ROOT), ascount(N), R = [A,"-",B|T] :-
+	N1 = N-1 |
+	formula(HEAD,ROOT), ascount(N1), R = [sub(A,B)|T].
+makesubh@@
+formula([A,"-",B|T],ROOT), ascount(N), :-
+	N1 = N-1 |
+	formula([sub(A,B)|T],ROOT), ascount(N1).
+frmlend@@
+formula([T],ROOT), ascount(0) :- result(T,ROOT).
+result(R1,ROOT), R = [T] :- result(R1,ROOT), R = T.

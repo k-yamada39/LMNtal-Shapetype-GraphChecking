@@ -1,0 +1,62 @@
+{
+
+nil(node(L0,node(L1,node(L2,node(L3,node(L4,node(L5,node(L6,node(L7,node(L8,node(L9,nil,L10),L11),L12),L13),L14),L15),L16),L17),L18),L19)).
+nil(node(L19,node(L18,node(L17,node(L16,node(L15,node(L14,node(L13,node(L12,node(L11,node(L10,nil,L20),L21),L22),L23),L24),L25),L26),L27),L28),L29)).
+nil(node(L29,node(L28,node(L27,node(L26,node(L25,node(L24,node(L23,node(L22,node(L21,node(L20,nil,L30),L31),L32),L33),L34),L35),L36),L37),L38),L39)).
+nil(node(L39,node(L38,node(L37,node(L36,node(L35,node(L34,node(L33,node(L32,node(L31,node(L30,nil,L40),L41),L42),L43),L44),L45),L46),L47),L48),L49)).
+nil(node(L49,node(L48,node(L47,node(L46,node(L45,node(L44,node(L43,node(L42,node(L41,node(L40,nil,L50),L51),L52),L53),L54),L55),L56),L57),L58),L59)).
+nil(node(L59,node(L58,node(L57,node(L56,node(L55,node(L54,node(L53,node(L52,node(L51,node(L50,nil,L60),L61),L62),L63),L64),L65),L66),L67),L68),L69)).
+nil(node(L69,node(L68,node(L67,node(L66,node(L65,node(L64,node(L63,node(L62,node(L61,node(L60,nil,nil),nil),nil),nil),nil),nil),nil),nil),nil),nil)).
+nil(node(L70,node(L71,node(L72,node(L73,node(L74,node(L75,node(L76,node(L77,node(L78,node(L79,nil,L9),L8),L7),L6),L5),L4),L3),L2),L1),L0)).
+nil(node(L80,node(L81,node(L82,node(L83,node(L84,node(L85,node(L86,node(L87,node(L88,node(L89,nil,L79),L78),L77),L76),L75),L74),L73),L72),L71),L70)).
+nil(node(nil,node(nil,node(nil,node(nil,node(nil,node(nil,node(nil,node(nil,node(nil,node(nil,nil,L89),L88),L87),L86),L85),L84),L83),L82),L81),L80)).
+
+//nil(node(L0,node(L1,node(L2,nil,nil),nil),nil)). nil(node(L3,node(L4,node(L5,nil,L2),L1),L0)). nil(node(L6,node(L7,node(L8,nil,L5),L4),L3)). nil(node(nil,node(nil,node(nil,nil,L8),L7),L6)).
+//nil(node(L0,node(nil,node(L2,nil,nil),nil),nil)),nil(node(L3,node(L4,node(L5,nil,L2),nil),L0)),nil(node(nil,node(nil,node(nil,nil,L5),L4),L3)).
+
+r1@@
+s(X,Y,nil,nil,nil,nil) :- int(X), int(Y) | grid(X,Y).
+r2@@
+node(nil,nil,nil,R), s($n1,1,nil,R,nil,nil) :-
+		$n1>0, $n=$n1+1 |
+		s($n,1,nil,nil,nil,nil).
+r3@@
+node(nil,nil,D,nil), s(1,$m1,D,nil,nil,nil) :-
+		$m1>0, $m=$m1+1 |
+		s(1,$m,nil,nil,nil,nil).
+r4@@
+node(nil,nil,D,R), s($n1,$m,nil,R,nil,nil), s($n,$m1,D,nil,nil,nil) :- 
+		$n>1, $m>1, $n1 = $n-1, $m1 = $m-1 |
+		s($n,$m,nil,nil,nil,nil).
+r5@@
+node(U2,L2,U1,R2), node(U3,R2,X,R3),
+node(U1,nil,D,R), s($n1,$m,X,R,nil,nil), s($n,$m1,D,nil,nil,nil):- 
+		$n>0, $m1>0, $n = $n1+1, $m = $m1+1 |
+		s($n,$m,U1,nil,nil,nil), node(U2,L2,U1,R2), node(U3,R2,nil,R3).
+r6@@
+node(U2,L2,U1,R2), node(U3,R2,X,R3),
+node(U1,nil,nil,R), s($n1,1,X,R,nil,nil) :- 
+		$n1>0, $n = $n1+1 |
+		s($n,1,U1,nil,nil,nil), node(U2,L2,U1,R2), node(U3,R2,nil,R3).
+r7@@
+node(U2,L2,U1,R2),node(U1,nil,D,nil), s(1,$m1,D,nil,nil,nil) :- 
+		$m1>0, $m = $m1+1 |
+		s(1,$m,U1,nil,nil,nil), node(U2,L2,U1,R2).
+r8@@
+node(nil,X,nil,R1), node(U2,L,D,X), s($n1,$m,nil,R1,nil,nil) :- 
+		$n1>0, $n = $n1+1, int($m) |
+		s($n,$m,nil,X,nil,nil), node(U2,L,D,X).
+r9@@
+node(U1,L1,nil,R1), node(U2,L2,U1,R2), node(U3,R2,D3,nil), s(1,$m1,D3,R1,nil,nil) :-
+		$m2=$m1+1 |
+		s(2,$m1,U1,L1,nil,nil), node(U2,L2,U1,R2), s(1,$m2,U3,R2,nil,nil).
+r10@@
+node(U0,L0,D0,L1), node(U1,L1,nil,R1), node(U2,L2,U1,R2), node(U3,R2,D3,R3), s($n1,$m,D3,R1,nil,nil) :-
+		$n1>1, $n=$n1+1, int($m) |
+		node(U0,L0,D0,L1), s($n,$m,U1,L1,nil,nil), node(U2,L2,U1,R2), node(U3,R2,nil,R3).
+
+r11@@	
+node(U,L,nil,nil) :- s(1,1,U,L,nil,nil).
+
+}.
+goal@@ {grid(X,Y), @p} :- int(X),int(Y) | correct(X,Y).

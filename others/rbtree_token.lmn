@@ -1,0 +1,21 @@
+{
+    b(b(r(b(r(l,l),l),b(l,l)),b(l,l)),b(b(l,l),b(l,l)),"R"). //input graph
+	exe.
+	
+	b(L,R,"R"), exe :- b(L,R,check,"R").
+	b(b(L1,R1),R,check,H) :- b(b(L1,R1,check),R,H).
+	b(r(L1,R1),R,check,H) :- b(r(L1,R1,check),R,H).
+	b(l,b(L2,R2),check,H) :- b(l,b(L2,R2,check),H).
+	b(l,r(L2,R2),check,H) :- b(l,r(L2,R2,check),H).
+	r(b(L1,R1),R,check,H) :- r(b(L1,R1,check),R,H).
+	r(l,b(L2,R2),check,H) :- r(l,b(L2,R2,check),H).
+	b(l,l,check,H), b(H,R,H1) :- b(l,R,check,H1).
+	b(l,l,check,H), r(H,R,H1) :- r(l,R,check,H1).
+	b(l,l,check,H), b(L,H,H1) :- b(L,l,check,H1).
+	b(l,l,check,H), r(L,H,H1) :- r(L,l,check,H1).
+	r(l,l,check,H), b(H,R,H1) :- b(l,R,check,H1).
+	r(l,l,check,H), b(L,H,H1) :- b(L,l,check,H1).
+	b(l,l,check,H) :- string(H) | rbtree(H).
+   
+ }.
+ goal@@ {rbtree(R), @p} :- string(R) | .

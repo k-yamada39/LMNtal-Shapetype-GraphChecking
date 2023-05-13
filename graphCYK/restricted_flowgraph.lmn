@@ -1,0 +1,279 @@
+/*
+Restricted flow graph
+start.
+start :- new($n1), new($n2) | lc($n1,$n2).
+
+lc($n1,$n2) :- hlink($n1), hlink($n2), new($n3) | lc($n1,$n3), lc($n3,$n2).
+lc($n1,$n2) :- hlink($n1), hlink($n2), new($n3) | lc($n1,$n3), ld($n3,$n2,$n2).
+lc($n1,$n2) :- hlink($n1), hlink($n2), new($n3) | ld($n1,$n2,$n3), lc($n3,$n2).
+lc($n1,$n2) :- hlink($n1), hlink($n2), new($n3) | ld($n1,$n3,$n2), lc($n3,$n2).
+lc($n1,$n2) :- hlink($n1), hlink($n2) | d($n1,$n2,$n2).
+lc($n1,$n2) :- hlink($n1), hlink($n2) | c($n1,$n2).
+
+ld($n1,$n2,$n3) :- hlink($n1), hlink($n2), hlink($n3), new($n4) | lc($n1,$n4), ld($n4,$n2,$n3).
+ld($n1,$n2,$n3) :- hlink($n1), hlink($n2), hlink($n3), new($n4) | ld($n1,$n2,$n4), lc($n4,$n3).
+ld($n1,$n2,$n3) :- hlink($n1), hlink($n2), hlink($n3), new($n4) | ld($n1,$n4,$n3), lc($n4,$n2).
+ld($n1,$n2,$n3) :- hlink($n1), hlink($n2), hlink($n3) | d($n1,$n2,$n3).
+*/
+
+{
+    main.
+    {
+        ruleset.
+
+        elem{djc_gen(E,P,N,H),$p[H]} :- E>=P, P1=P+1, N=:=P | elem{H=[1|djc_gen(E,P1,N)],$p[H]}.
+        elem{djc_gen(E,P,N,H),$p[H]} :- E>=P, P1=P+1, N=\=P | elem{H=[0|djc_gen(E,P1,N)],$p[H]}.
+        elem{djc_gen(E,P,N,H),$p[H]} :- E<P, int(N) | elem{H=[],$p[H]}.
+
+        elem{H=djc_c([A|X],[B|Y]),$p[H,X,Y]} :- A=:=1, B=:=1 | .
+        elem{H=djc_c([A|X],[B|Y]),$p[H,X,Y]} :- A=:=0, B=:=0 | elem{H=[0|djc_c(X,Y)],$p[H,X,Y]}.
+        elem{H=djc_c([A|X],[B|Y]),$p[H,X,Y]} :- A=:=1, B=:=0 | elem{H=[1|djc_c(X,Y)],$p[H,X,Y]}.
+        elem{H=djc_c([A|X],[B|Y]),$p[H,X,Y]} :- A=:=0, B=:=1 | elem{H=[1|djc_c(X,Y)],$p[H,X,Y]}.
+        elem{H=djc_c([],[]),$p[H]} :- elem{H=[],$p[H]}.
+
+        elem{H=dnode_gen(D),$p[H]} :- D>0, D1=D-1 | elem{H=[0|dnode_gen(D1)],$p[H]}.
+        elem{H=dnode_gen(0),$p[H]} :- elem{H=[],$p[H]}.
+
+        elem{H=dnode_upd([A|X],[B|Y]), $p[H,X,Y]} :- R=A+B | elem{H=[R|dnode_upd(X,Y)], $p[H,X,Y]}.
+        elem{H=dnode_upd([],[]), $p[H]} :- elem{H=[], $p[H]}.
+        elem{H=dnode_upd([A|X],[]), $p[H,X]} :- int(A) | .
+        elem{H=dnode_upd([],[B|Y]), $p[H,Y]} :- int(B) | .
+
+        elem{H=dnode_check([A|X],[B|Y]), $p[H,X,Y]} :- A=<B | elem{H=[A|dnode_check(X,Y)], $p[H,X,Y]}.
+        elem{H=dnode_check([A|X],[B|Y]), $p[H,X,Y]} :- A>B | .
+        elem{H=dnode_check([],[]), $p[H]} :- elem{H=[], $p[H]}.
+
+        nodedata(NDA) \ elem{dnode(H), consume(ID,C), $p[H]} :- int(ID), int(C), ground(NDA) | elem{dnode(dnode_calc(H,consume(ID,C),NDA)), $p[H]}.
+
+        elem{H=dnode_calc([A|X],consume(ID,C),[B|Y]), $p[H,A,C,X,Y]} :-  ID=\=1, ID1=ID-1, int(B) | elem{H=[A|dnode_calc(X,consume(ID1,C),Y)], $p[H,A,C,X,Y]}.
+        elem{H=dnode_calc([A|X],consume(ID,C),[B|Y]), $p[H,X,Y]} :-  ID=:=1, ID1=ID-1, B>=A+C, A1=A+C | elem{H=[A1|dnode_calc(X,consume(ID1,0),Y)], $p[H,X,Y]}.
+        elem{H=dnode_calc([A|X],consume(ID,C),[B|Y]), $p[H,X,Y]} :-  ID=:=1, B<A+C | .
+        elem{H=dnode_calc([],consume(ID,C),[]), $p[H]} :- ID=<0, int(C) | elem{H=[], $p[H]}.
+
+        nodedata(NDA) \ elem{dnode(H), deleate(ID,C), $p[H]} :- int(ID), int(C), ground(NDA) | elem{dnode(dnode_deleate(H,deleate(ID,C),NDA)), $p[H]}.
+
+        elem{H=dnode_deleate([A|X],deleate(ID,C),[B|Y]), $p[H,A,C,X,Y]} :-  ID=\=1, ID1=ID-1, int(B) | elem{H=[A|dnode_deleate(X,deleate(ID1,C),Y)], $p[H,A,C,X,Y]}.
+        elem{H=dnode_deleate([A|X],deleate(ID,C),[B|Y]), $p[H,X,Y]} :-  ID=:=1, ID1=ID-1, B=:=A+C | elem{H=[B|dnode_deleate(X,deleate(ID1,0),Y)], $p[H,X,Y]}.
+        elem{H=dnode_deleate([A|X],deleate(ID,C),[B|Y]), $p[H,X,Y]} :-  ID=:=1, B=\=A+C | .
+        elem{H=dnode_deleate([],deleate(ID,C),[]), $p[H]} :- ID=<0, int(C) | elem{H=[], $p[H]}.
+
+    }.
+
+    
+    //input graph(size 8)
+    c(!N1,!N2), d(!N2,!N3,!N4), c(!N3,!N5), c(!N5,!N8), d(!N4,!N6,!N7), c(!N6,!N7), c(!N7,!N8), c(!N8,!N9).
+    //extra data(Recommended to remove)
+    nid(1,!N1),nid(2,!N2),nid(3,!N3),nid(4,!N4),nid(5,!N5),nid(6,!N6),nid(7,!N7),nid(8,!N8),nid(9,!N9).
+    
+    /*
+    //size 2
+    c(!N1,!N2), c(!N2,!N3).
+    nid(1,!N1), nid(2,!N2), nid(3,!N3).
+    */
+    /*
+    //size 4
+    c(!N1,!N2), d(!N2,!N3,!N4), c(!N4,!N3), c(!N3,!N5).
+    nid(1,!N1), nid(2,!N2), nid(3,!N3), nid(4,!N4), nid(5,!N5).
+    */
+    /*
+    //size 5
+    c(!N1,!N2), d(!N2,!N3,!N4), c(!N3,!N5), c(!N4,!N5), c(!N5,!N6).
+    nid(1,!N1), nid(2,!N2), nid(3,!N3), nid(4,!N4), nid(5,!N5), nid(6,!N6).
+    */
+    /*
+    //size 6
+    c(!N1,!N2), d(!N2,!N3,!N4), c(!N4,!N5), c(!N5,!N6), c(!N3,!N6), c(!N6,!N7).
+    nid(1,!N1), nid(2,!N2), nid(3,!N3), nid(4,!N4), nid(5,!N5), nid(6,!N6), nid(7,!N7).
+    */
+    /*
+    //size 7
+    c(!N1,!N2), d(!N2,!N3,!N4), c(!N3,!N8), d(!N4,!N6,!N7), c(!N6,!N7), c(!N7,!N8), c(!N8,!N9).
+    nid(1,!N1),nid(2,!N2),nid(3,!N3),nid(4,!N4),nid(6,!N6),nid(7,!N7),nid(8,!N8),nid(9,!N9).
+    */
+
+    //id assignment to edges and count connect
+    nid(ID,A), ncnt(N) :- N1=N+1 | nid(ID,A,0), ncnt(N1).
+    c($a,$b), nid(ID1,$a,ACNT), nid(ID2,$b,BCNT), ecnt(N) :- hlink($a), hlink($b), ACNT1=ACNT+1, BCNT1=BCNT+1, N1=N+1 | c(N1,$a,$b), nid(ID1,$a,ACNT1), nid(ID2,$b,BCNT1), ecnt(N1).
+    c($a,$a), nid(ID1,$a,ACNT), ecnt(N) :- hlink($a), ACNT1=ACNT+2, N1=N+1 | c(N1,$a,$a), nid(ID1,$a,ACNT1), ecnt(N1).
+
+    d($a,$b,$c), nid(ID1,$a,ACNT), nid(ID2,$b,BCNT), nid(ID3,$c,CCNT), ecnt(N) :- hlink($a), hlink($b), hlink($c), ACNT1=ACNT+1, BCNT1=BCNT+1, CCNT1=CCNT+1, N1=N+1 | d(N1,$a,$b,$c), nid(ID1,$a,ACNT1), nid(ID2,$b,BCNT1), nid(ID3,$c,CCNT1), ecnt(N1).
+    d($a,$b,$b), nid(ID1,$a,ACNT), nid(ID2,$b,BCNT), ecnt(N) :- hlink($a), hlink($b), ACNT1=ACNT+1, BCNT1=BCNT+2, N1=N+1 | d(N1,$a,$b,$b), nid(ID1,$a,ACNT1), nid(ID2,$b,BCNT1), ecnt(N1).
+
+
+    //additional data
+    ecnt(0). 
+    scnt(0).
+    ncnt(0).
+
+    //make datasets
+    ecnt(E) \ scnt(S), {ruleset, @r} :- E>S, S1=S+1 | {s(S1),count(0), @r}, {ruleset, @r}, scnt(S1).
+    
+}.
+
+{
+    nodecheck.
+
+    ndgcnt(1).
+    
+    nodedata(ndg).
+
+    ncnt(E), nid(ID,A,CNT) \ ndgcnt(N), H=ndg :- E>=N, N=:=ID, N1=N+1, int(CNT) | ndgcnt(N1), H=[CNT|ndg].
+    ncnt(E) \ ndgcnt(N), H=ndg :- E<N | H=[].
+
+}.
+
+{
+    ndatadist.
+
+    nodedata(LIST) \ {s(N),$p[],@p} :- uniq(N), ground(LIST) | {s(N), nodedata(LIST), $p[], @p}. 
+}.
+
+{
+    genrule.
+
+    /*
+    terminal rules template
+    TARGET_EDGE, NODE_DATAS, ecnt(E), ncnt(NC) \ {s(1),count(C),$p,@p}:- 
+                        HLINK_GUARDS, UNIQ_GUARD, INT_GUARDS, C1=C+1 | 
+                        {s(1),count(C1),elem{id(C1), GENERATED_GRAPH_IMAGE ,p(0,EDGE_ID),p(0,-1),djc(djc_gen(E,1,EDGE_ID)),dnode(dnode_gen(NC))},$p,@p}.
+    */
+    //make S1
+    dterminal@@
+    d(N,$n1,$n2,$n3), nid(X,$n1,XC), nid(Y,$n2,YC), nid(Z,$n3,ZC), ecnt(E), ncnt(NC) \ {s(1),count(C),$p,@p}:- 
+                        hlink($n1), hlink($n2), hlink($n3), uniq(N,$n1,$n2,$n3), int(X), int(Y), int(Z), int(E), int(N), int(NC), C1=C+1 | 
+                        {s(1),count(C1),elem{id(C1),ld(X,Y,Z),p(0,N),p(0,-1),djc(djc_gen(E,1,N)),dnode(dnode_gen(NC))},$p,@p}.
+    cterminal1@@
+    d(N,$n1,$n2,$n2), nid(X,$n1,XC), nid(Y,$n2,YC), ecnt(E), ncnt(NC) \ {s(1),count(C),$p,@p} :- 
+                        hlink($n1), hlink($n2), uniq(N,$n1,$n2), int(X), int(Y), int(E), int(N), int(NC), C1=C+1 |
+                        {s(1),count(C1),elem{id(C1),lc(X,Y),p(0,N),p(0,-1),djc(djc_gen(E,1,N)),dnode(dnode_gen(NC))},$p,@p}.
+    cterminal2@@
+    c(N,$n1,$n2), nid(X,$n1,XC), nid(Y,$n2,YC), ecnt(E), ncnt(NC) \ {s(1),count(C),$p,@p} :- 
+                        hlink($n1), hlink($n2), uniq(N,$n1,$n2), int(X), int(Y), int(E), int(N), int(NC), C1=C+1 |
+                        {s(1),count(C1),elem{id(C1),lc(X,Y),p(0,N),p(0,-1),djc(djc_gen(E,1,N)),dnode(dnode_gen(NC))},$p,@p}.
+
+    /*
+    nonterminal rules template
+    crule1@@
+    {s(L0),elem{id(L1),TARGET_GRAPH_IMAGE1,djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),TARGET_GRAPH_IMAGE2,djc(DL2),dnode(DN2),$r},$y,@y}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        UNIQ_GUARD, C1=C+1, N=:=L0+M0, G=:=N,  INT_GUARDS, GRAPH_CONNECT_CHECKS, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),TARGET_GRAPH_IMAGE1,djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),TARGET_GRAPH_IMAGE2,djc(DL2),dnode(DN2),$r},$y,@y},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),GENERATED_GRAPH_IMAGE,p(L0,L1),p(M0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),DELEATE_STATE,CONSUME_STATE},$p,@p}.
+    and...
+    {s(L0),elem{id(L1),TARGET_GRAPH_IMAGE1,djc(DL1),dnode(DN1),$l},elem{id(M1),TARGET_GRAPH_IMAGE2,djc(DL2),dnode(DN2),$r},$x,@x}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        UNIQ_GUARD, C1=C+1, N=:=L0*2, G=:=N, INT_GUARDS, GRAPH_CONNECT_CHECKS, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),TARGET_GRAPH_IMAGE1,djc(DL1),dnode(DN1),$l},elem{id(M1),TARGET_GRAPH_IMAGE2,djc(DL2),dnode(DN2),$r},$x,@x},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),GENERATED_GRAPH_IMAGE,p(L0,L1),p(L0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),DELEATE_STATE,CONSUME_STATE},$p,@p}.
+    */
+    //make S2~
+    crule1@@
+    {s(L0),elem{id(L1),lc(X,ZL),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),lc(ZM,Y),djc(DL2),dnode(DN2),$r},$y,@y}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M0,M1), C1=C+1, N=:=L0+M0, G=:=N,  int(X), int(Y), ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),lc(X,ZL),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),lc(ZM,Y),djc(DL2),dnode(DN2),$r},$y,@y},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),lc(X,Y),p(L0,L1),p(M0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2)},$p,@p}.
+    crule1@@
+    {s(L0),elem{id(L1),lc(X,ZL),djc(DL1),dnode(DN1),$l},elem{id(M1),lc(ZM,Y),djc(DL2),dnode(DN2),$r},$x,@x}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M1), C1=C+1, N=:=L0*2, G=:=N, int(X), int(Y), ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),lc(X,ZL),djc(DL1),dnode(DN1),$l},elem{id(M1),lc(ZM,Y),djc(DL2),dnode(DN2),$r},$x,@x},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),lc(X,Y),p(L0,L1),p(L0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2)},$p,@p}.
+
+    crule2@@
+    {s(L0),elem{id(L1),lc(X,ZL),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),ld(ZM,Y1,Y2),djc(DL2),dnode(DN2),$r},$y,@y}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M0,M1), C1=C+1, N=:=L0+M0, G=:=N, int(X), Y1=:=Y2, ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),lc(X,ZL),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),ld(ZM,Y1,Y2),djc(DL2),dnode(DN2),$r},$y,@y},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),lc(X,Y1),p(L0,L1),p(M0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2),consume(Y1,1)},$p,@p}.
+    crule2@@
+    {s(L0),elem{id(L1),lc(X,ZL),djc(DL1),dnode(DN1),$l},elem{id(M1),ld(ZM,Y1,Y2),djc(DL2),dnode(DN2),$r},$x,@x}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M1), C1=C+1, N=:=L0*2, G=:=N, int(X), Y1=:=Y2, ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),lc(X,ZL),djc(DL1),dnode(DN1),$l},elem{id(M1),ld(ZM,Y1,Y2),djc(DL2),dnode(DN2),$r},$x,@x},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),lc(X,Y1),p(L0,L1),p(L0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2),consume(Y1,1)},$p,@p}.
+
+    crule3@@
+    {s(L0),elem{id(L1),ld(X,YL,ZL),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),lc(ZM,YM),djc(DL2),dnode(DN2),$r},$y,@y}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M0,M1), C1=C+1, N=:=L0+M0, G=:=N, int(X), YL=:=YM, ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),ld(X,YL,ZL),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),lc(ZM,YM),djc(DL2),dnode(DN2),$r},$y,@y},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),lc(X,YL),p(L0,L1),p(M0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2),consume(YL,1)},$p,@p}.
+    crule3@@
+    {s(L0),elem{id(L1),ld(X,YL,ZL),djc(DL1),dnode(DN1),$l},elem{id(M1),lc(ZM,YM),djc(DL2),dnode(DN2),$r},$x,@x},{s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M1), C1=C+1, N=:=L0*2, G=:=N, int(X), YL=:=YM, ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),ld(X,YL,ZL),djc(DL1),dnode(DN1),$l},elem{id(M1),lc(ZM,YM),djc(DL2),dnode(DN2),$r},$x,@x},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),lc(X,YL),p(L0,L1),p(L0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2),consume(YL,1)},$p,@p}.
+
+    crule4@@
+    {s(L0),elem{id(L1),ld(X,ZL,YL),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),lc(ZM,YM),djc(DL2),dnode(DN2),$r},$y,@y}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M0,M1), C1=C+1, N=:=L0+M0, G=:=N, int(X), YL=:=YM, ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),ld(X,ZL,YL),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),lc(ZM,YM),djc(DL2),dnode(DN2),$r},$y,@y},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),lc(X,YL),p(L0,L1),p(M0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2),consume(YL,1)},$p,@p}.
+    crule4@@
+    {s(L0),elem{id(L1),ld(X,ZL,YL),djc(DL1),dnode(DN1),$l},elem{id(M1),lc(ZM,YM),djc(DL2),dnode(DN2),$r},$x,@x}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M1), C1=C+1, N=:=L0*2, G=:=N, int(X), YL=:=YM, ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),ld(X,ZL,YL),djc(DL1),dnode(DN1),$l},elem{id(M1),lc(ZM,YM),djc(DL2),dnode(DN2),$r},$x,@x},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),lc(X,YL),p(L0,L1),p(L0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2),consume(YL,1)},$p,@p}.
+
+
+    drule1@@
+    {s(L0),elem{id(L1),lc(W,ZL),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),ld(ZM,X,Y),djc(DL2),dnode(DN2),$r},$y,@y}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M0,M1), C1=C+1, N=:=L0+M0, G=:=N, int(W), int(X), int(Y), ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),lc(W,ZL),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),ld(ZM,X,Y),djc(DL2),dnode(DN2),$r},$y,@y},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),ld(W,X,Y),p(L0,L1),p(M0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2)},$p,@p}.
+    drule1@@
+    {s(L0),elem{id(L1),lc(W,ZL),djc(DL1),dnode(DN1),$l},elem{id(M1),ld(ZM,X,Y),djc(DL2),dnode(DN2),$r},$x,@x}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M1), C1=C+1, N=:=L0*2, G=:=N, int(W), int(X), int(Y), ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),lc(W,ZL),djc(DL1),dnode(DN1),$l},elem{id(M1),ld(ZM,X,Y),djc(DL2),dnode(DN2),$r},$x,@x},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),ld(W,X,Y),p(L0,L1),p(L0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2)},$p,@p}.
+
+    drule2@@
+    {s(L0),elem{id(L1),ld(W,X,ZL),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),lc(ZM,Y),djc(DL2),dnode(DN2),$r},$y,@y}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M0,M1), C1=C+1, N=:=L0+M0, G=:=N, int(W), int(X), int(Y), ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),ld(W,X,ZL),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),lc(ZM,Y),djc(DL2),dnode(DN2),$r},$y,@y},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),ld(W,X,Y),p(L0,L1),p(M0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2)},$p,@p}.
+    drule2@@
+    {s(L0),elem{id(L1),ld(W,X,ZL),djc(DL1),dnode(DN1),$l},elem{id(M1),lc(ZM,Y),djc(DL2),dnode(DN2),$r},$x,@x}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M1), C1=C+1, N=:=L0*2, G=:=N, int(W), int(X), int(Y), ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),ld(W,X,ZL),djc(DL1),dnode(DN1),$l},elem{id(M1),lc(ZM,Y),djc(DL2),dnode(DN2),$r},$x,@x},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),ld(W,X,Y),p(L0,L1),p(L0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2)},$p,@p}.
+
+    drule3@@
+    {s(L0),elem{id(L1),ld(W,ZL,Y),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),lc(ZM,X),djc(DL2),dnode(DN2),$r},$y,@y}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M0,M1), C1=C+1, N=:=L0+M0, G=:=N, int(W), int(X), int(Y), ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),ld(W,ZL,Y),djc(DL1),dnode(DN1),$l},$x,@x}, {s(M0),elem{id(M1),lc(ZM,X),djc(DL2),dnode(DN2),$r},$y,@y},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),ld(W,X,Y),p(L0,L1),p(M0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2)},$p,@p}.
+    drule3@@
+    {s(L0),elem{id(L1),ld(W,ZL,Y),djc(DL1),dnode(DN1),$l},elem{id(M1),lc(ZM,X),djc(DL2),dnode(DN2),$r},$x,@x}, {s(N),count(C),nodedata(NDA),$p,@p}, gen(G) :- 
+                        uniq(L0,L1,M1), C1=C+1, N=:=L0*2, G=:=N, int(W), int(X), int(Y), ZL=:=ZM, ground(DL1), ground(DL2), ground(DN1), ground(DN2), ground(NDA) |
+                        gen(G),
+                        {s(L0),elem{id(L1),ld(W,ZL,Y),djc(DL1),dnode(DN1),$l},elem{id(M1),lc(ZM,X),djc(DL2),dnode(DN2),$r},$x,@x},
+                        {s(N),count(C1),nodedata(NDA),elem{id(C1),ld(W,X,Y),p(L0,L1),p(L0,M1),djc(djc_c(DL1,DL2)),dnode(dnode_check(dnode_upd(DN1,DN2),NDA)),deleate(ZL,2)},$p,@p}.
+}.
+
+{
+    datatrim.
+
+    {
+        trimrule.
+
+        result_cnt(N), elem{id(L1),$p[],@p} :- uniq(L1), N1=N+1 | result_cnt(N1), elem{id(L1),$p[],@p}.
+    }.
+
+    {trimrule, @r}, scnt(S), {s(L), $p[], @p}/ :- S=:=L | {s(L), result_cnt(0), $p[], @r}.
+}.
+
+{nodecheck, $r[], @r}, {main, $p[], @p} :- {main, nodecheckexe, $p[], $r[], @p, @r}.
+{ndatadist, @r}, {main, nodecheckexe, $p[], @p} :- {main, ndatadistexe, $p[], @p, @r}.
+{genrule, @r}, {main, ndatadistexe, $p[], @p}/ :- {main, gen(1), $p[], @p, @r}.
+{main, gen(N), scnt(S), $p[], @p}/ :- S>N, N1=N+1 | {main, gen(N1), scnt(S), $p[], @p}.
+{datatrim, $r[], @r}, {main, gen(N), scnt(S), $p[], @p}/ :- S=:=N, N1=N+1 | {main, scnt(S), $p[], $r[], @r}.
